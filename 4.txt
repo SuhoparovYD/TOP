@@ -1,0 +1,231 @@
+
+#include <iostream>
+#include <string>
+#include <iomanip>
+#include <ctime>
+#include <conio.h>
+#include <fstream>
+
+// миль пардон за сумбур
+
+//Игра происходит на карте размером 40 на 40 клеток.По клеткам перемещаются враги и персонаж игрока.
+//После каждого хода игрока карта показывается вновь со всеми врагами на ней.
+//Игрок помечается буквой P.Враги буквой E.Пустые места — точкой.
+//Каждый персонаж игры представлен в виде структуры с полями : имя, жизни, броня, урон.
+
+#define H 20        // field height,  1 - index i
+#define W 40        // field witch, 2 - index j
+
+#define N 6         // number partners
+#define ML 4        // enemy max life
+#define MA 2        // enemy max  armor
+#define MD 8        // enemy max  damage
+
+
+struct partner {
+    std::string name; 
+    int y;      //vertical coord
+    int x;      //horizontal coord
+    int life;
+    int armor;
+    int damage;
+};
+
+void save(partner* en) {
+    std::ofstream f("conf.cfg");
+    if (!f) {
+        std::cout << "File open error";
+        _getch();
+    }
+    for (int i = 0; i < N; i++)
+        f << en[i].name << " " << en[i].y << " " << en[i].x << " " << en[i].life << " " << en[i].armor << " " << en[i].damage << "\n";
+    f.close();
+}
+
+void load(partner* en) {
+    std::ifstream f("conf.cfg");
+    if (!f) {
+        std::cout << "File open error";
+        return;
+    }
+    for (int i = 0; i < N; i++)
+        f >> en[i].name >> en[i].y >> en[i].x >> en[i].life >> en[i].armor >> en[i].damage;
+    f.close();
+
+}
+
+void sleep(float seconds) {
+    clock_t start = clock();
+    float secondsAhead = seconds * CLOCKS_PER_SEC;
+    while (clock() < start + secondsAhead);
+
+    return;
+}
+
+void draw(char field[][W], partner* en) {
+    system("cls");
+    for (int i = 0; i < H; i++) {
+        for (int j = 0; j < W; j++)
+            std::cout << field[i][j] ;
+        std::cout << "\n";
+    }
+    std::cout << "Gamer life + armor : "  << (en->life + en->armor);
+    sleep(0.5);
+}
+
+void init(char field[][W], partner* en) {
+    int g;
+    srand(time(0));
+    for (int i = 0; i < H; i++) {
+        for (int j = 0; j < W; j++)
+            field[i][j] = '.';
+    }
+    for (int i = 0; i < N; i++) {
+         do g = rand() % (W * H); 
+         while (field[g/H][g%W] != '.');
+
+         if (!i) {
+             en->y = g / H;
+             en->x = g % W;
+             field[en->y][en->x] = 'P';
+         }
+         else {
+             en[i].name = "Enemy"+ std::string(1,(char)(i + 48));
+             en[i].y = g / H;
+             en[i].x = g % W;
+             en[i].life = 1+ rand() % ML;
+             en[i].armor = rand() % MA;
+             en[i].damage = 3 + rand() % MD;
+             field[en[i].y][en[i].x] = 'E';
+         }
+    }
+
+}
+
+void check(char field[][W], partner* en) {
+    int enlife = 0;
+    if (field[en->y][en->x] == 'E') {
+        for (int i = 1; i < N; i++) {
+            if (en->y == en[i].y && en->x == en[i].x) {
+                en->armor -= en[i].damage;
+                if (en->armor < 0) {
+                    en->life += en->armor;
+                    if (en->life <= 0) {
+                        std::cout << "\nGamer killed\n";
+                        exit(0);
+                    }
+                    en->armor = 0;
+                }
+                en[i].life = 0;
+            }
+            enlife += en[i].life;
+        } // std::cout << enlife; _getch();
+        if (enlife == 0) {
+            std::cout << "\nGamer Won\n";
+            exit(0);
+        }
+    }
+    field[en->y][en->x] = 'P';
+    draw(field, en);
+}
+
+
+
+int main() {
+    using namespace std;
+    setlocale(0, "rus");
+
+    char field[H][W];
+    char ch;
+    string dir;
+    int g,n;
+
+/*    В начале игры создаются 5 случайных врагов в случайных клетках карты.
+  Имена врагам задаются в формате “Enemy #N”, где N — это порядковый номер врага.
+  Уровень жизней врагам задаётся случайно, от 50 до 150. Уровень брони варьируется от 0 до 50. 
+  Урон тоже выбирается случайно от 15 до 30 единиц.
+  Игрок конструирует своего персонажа самостоятельно.Задаёт все его параметры, включая имя*/
+
+    partner* en = new partner[N];
+    //en[0] - gamer
+    //Gamer.damage >  enemy.(life+armor)
+
+    cout << "Load game? "; cin >> ch;
+    if ((ch | 0x20) == 'y') {
+        load(en); 
+        cout << "loadd ";
+        for (int i = 0; i < H; i++) 
+            for (int j = 0; j < W; j++)
+                field[i][j] = '.';
+
+        for (int i = 0; i < N; i++) {
+            if (!i) {
+                field[en->y][en->x] = 'P';
+            }
+            else {
+                if(en[i].life)
+                    field[en[i].y][en[i].x] = 'E';
+            }
+        }
+    }
+    else {
+        cout << "Gamer name: "; cin >> en->name;
+        cout << "Gamer life (10-20): "; cin >> en->life;
+        cout << "Gamer armor (10-20): "; cin >> en->armor;
+        cout << "Gamer damage (10-20): "; cin >> en->damage;
+
+        init(field, en);
+    }
+    draw(field, en);
+    while (true)
+    {
+        if (_kbhit())   {
+           ch = _getch();
+           if(ch==-32 ) ch = _getch();
+
+           if ((ch|0x20) == 'x')  return 0;  
+           if ((ch | 0x20) == 'w') save(en);
+           if (ch == 'K')  dir = "left";     
+           if (ch == 'M')  dir = "right";   
+           if (ch == 'H')  dir = "up";      
+           if (ch == 'P')  dir = "down";   
+
+           n = 1 + rand() % 5;   // modify n-й Enemy
+           if (field[en[n].y][en[n].x] != '.') {
+               do g = 3 + rand() % 7;
+               while (field[(en[n].y + g % 3) % H][(en[n].x + g % 5) % W] != '.');
+               field[en[n].y][en[n].x] = '.';
+               en[n].y = (en[n].y + g % 3) % H;
+               en[n].x = (en[n].x + g % 5) % W;
+               field[en[n].y][en[n].x] = 'E';
+           }
+        }
+ 
+        if (dir == "left") {
+            field[en->y][en->x] = '.';
+            en->x = (en->x - 1) % W;
+            check(field, en);
+        }
+
+        if (dir == "right") {
+            field[en->y][en->x] = '.';
+            en->x = (en->x + 1) % W;
+            check(field, en);
+        }
+
+        if (dir == "up") {
+            field[en->y][en->x] = '.';
+            if (!en->y) en->y = H;
+            en->y--;
+            check(field, en);
+        }
+
+        if (dir == "down") {
+            field[en->y][en->x] = '.';
+            en->y= ( en->y +1) %H;
+            check(field, en);
+        }
+    }
+    return 0;
+}
+
