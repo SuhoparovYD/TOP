@@ -1,0 +1,165 @@
+#include <iostream>
+
+using namespace std;
+
+class Tictactoe
+{
+	char* field;
+	int size;
+
+public:
+	Tictactoe(int sies) {
+		size = sies;
+		field = new char[size * size];
+	}
+
+	~Tictactoe() 	{
+		delete[] field;
+	}
+
+	char* operator[](int row) 	{
+		return field + row * size;
+	}
+
+	void inputF(Tictactoe& field) {
+		system("cls");
+
+		for (int j = 0; j < size; j++) {
+			cout << "--";
+		}
+		cout << "-" << endl;
+
+		for (int i = 0; i < size; i++) {
+			for (int j = 0; j < size; j++) {
+				cout << "|" << field[i][j];
+			}
+			cout << "|" << endl;
+
+			for (int j = 0; j < size; j++) {
+				cout << "--";
+			}
+			cout << "-" << endl;
+		}
+	}
+
+	int check(Tictactoe& field) {
+		int q, w;
+		int d1, d2;
+
+		for (int i = 0; i < size; i++) {
+			q = field[i][0];
+
+			for (int j = 0; j < size; j++) 
+				if (field[i][j] != q || q == ' ') {
+					q = ' ';
+					break;
+				}
+
+			if (q != ' ')  
+				return q;
+
+			w = field[0][i];
+
+			for (int j = 0; j < size; j++) 
+				if (field[j][i] != w || w == ' ') {
+					w = ' ';
+					break;
+				}
+
+			if (w != ' ') 
+				return w;
+		}
+
+		d1 = field[0][0];
+		d2 = field[0][size - 1];
+
+
+		for (int i = 0; i < size; i++) {
+			if (field[i][i] != d1) {
+				d1 = ' ';
+				break;
+			}
+		}
+
+		if (d1 != ' ') {
+			return d1;
+		}
+
+
+		for (int i = 0; i < size; i++) {
+			if (field[i][size - 1 - i] != d2) {
+				d2 = ' ';
+				break;
+			}
+		}
+
+
+		if (d2 != ' ') 
+			return d2;
+
+		return ' ';
+	}
+
+	void game(Tictactoe& field)  {
+		int player = 'X';
+		char result;
+		int run = 1;
+		int i = 0, j = 0;
+		bool vvod = true;
+
+		while (run) {
+			do {
+				if (vvod == false) {
+					cout << "Повтрорите ввод" << endl;
+				}
+				field.inputF(field);
+
+				if (player == 'X') {
+					cout << "Игрок X ходит" << endl;
+				}
+				else {
+					cout << "Игрок O ходит" << endl;
+
+				}
+				cout << "Введите координаты (через пробел): ";
+				cin >> i >> j;
+				vvod = false;
+
+			} while (i > size || j > size || i < 0 || j < 0 || field[i - 1][j - 1] != ' ');
+			vvod = true;
+
+			field[i - 1][j - 1] = player;
+
+			result = field.check(field);
+
+			if (result != ' ') {
+				cout << result << " выиграл!";
+				run = 0;
+			}
+
+			if (player == 'X') {
+				player = 'O';
+			}
+			else 
+				player = 'X';
+		}
+	}
+};
+
+int main() {
+	setlocale(0, "RUS");
+
+	int size;
+
+	cout << "Введите размер поля: ";
+	cin >> size;
+
+	Tictactoe field(size);
+
+	for (int i = 0; i < size; i++) {
+		for (int j = 0; j < size; j++)
+			field[i][j] = ' ';
+	}
+
+	field.game(field);
+}
